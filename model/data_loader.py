@@ -45,11 +45,10 @@ def tok2int_sent(example, tokenizer, max_seq_length):
     """Loads a data file into a list of `InputBatch`s."""
     src_tokens = example[0]
     src_labels = example[1]
-    hyp_tokens = example[2]
-    hyp_labels = example[3]
-
+    #hyp_tokens = example[2]
+    #hyp_labels = example[3]
     src_tokens, src_labels = reform_label(src_tokens, src_labels, tokenizer, max_seq_length)
-    hyp_tokens, hyp_labels = reform_label(hyp_tokens, hyp_labels, tokenizer, max_seq_length)
+    #hyp_tokens, hyp_labels = reform_label(hyp_tokens, hyp_labels, tokenizer, max_seq_length)
 
     tokens = src_tokens
     tokens = ["[CLS]"] + tokens
@@ -57,9 +56,9 @@ def tok2int_sent(example, tokenizer, max_seq_length):
     labels = [PAD_ID] + labels
     input_seg = [0] * len(tokens)
 
-    tokens = tokens + hyp_tokens
-    labels = labels + hyp_labels
-    input_seg = input_seg + [1] * len(hyp_tokens)
+    #tokens = tokens + hyp_tokens
+    #labels = labels + hyp_labels
+    #input_seg = input_seg + [1] * len(hyp_tokens)
     input_ids = tokenizer.convert_tokens_to_ids(tokens)
     input_mask = [1] * len(input_ids)
 
@@ -106,17 +105,20 @@ def tok2int_list(data, tokenizer, max_seq_length):
 class DataLoader(object):
     ''' For data iteration '''
 
-    def __init__(self, data_path, tokenizer, args, test=False, cuda=True, batch_size=64, src_flag=True, hyp_flag=True):
+    def __init__(self, queries, tokenizer, args, test=False, cuda=True, batch_size=64, src_flag=True, hyp_flag=True):
         self.cuda = cuda
         self.batch_size = batch_size
         self.tokenizer = tokenizer
         self.max_len = args.max_len
-        self.data_path = data_path
+        self.queries = queries
         self.test = test
         self.src_flag = src_flag
         self.hyp_flag = hyp_flag
-        examples = self.read_file(data_path)
+        # send queries to read_file
+        # queries is a dataframe
+        examples = self.read_file(queries)
         self.examples = examples
+        #TODO get examples length
         self.total_num = len(examples)
         if self.test:
             self.total_step = np.ceil(self.total_num * 1.0 / batch_size)
@@ -125,30 +127,29 @@ class DataLoader(object):
             self.shuffle()
         self.step = 0
 
-    def read_file(self, data_path):
+    def read_file(self, queries):
         data_list = list()
-        with open(data_path) as fin:
-            for line in fin:
-                examples = list()
-                line = line.strip()
-                data = json.loads(line)
-                src_token = data["src"].strip().split()[:-1] + ["[SEP]"]
-                src_label = [PAD_ID] * len(src_token)
-                if self.src_flag:
-                    src_label = convert_label(data["src_lab"])
-                assert len(src_token) == len(src_label)
-                if "hyp_lab" in data:
-                    assert len(data["hyp"]) == len(data["hyp_lab"])
-                for i in range(len(data["hyp"])):
-                    hyp_token = data["hyp"][i].strip().split()[:-1] + ["[SEP]"]
-                    example = [src_token, src_label, hyp_token]
-                    hyp_label = [PAD_ID] * len(hyp_token)
-                    if "hyp_lab" in data and self.hyp_flag:
-                        hyp_label = convert_label(data["hyp_lab"][i])
-                    assert len(hyp_token) == len(hyp_label)
-                    example.append(hyp_label)
-                    examples.append(example)
-                data_list.append(examples)
+        for _, row in queries.iterrows():
+            examples = list()
+            #line = line.strip()
+            #data = json.loads(line)
+            src_token = row['query'].strip().split()[:-1] + ["[SEP]"]
+            src_label = [PAD_ID] * len(src_token)
+            #if self.src_flag:
+            #    src_label = convert_label(data["src_lab"])
+            #assert len(src_token) == len(src_label)
+            #if "hyp_lab" in data:
+            #    assert len(data["hyp"]) == len(data["hyp_lab"])
+            #for i in range(len(data["hyp"])):
+            #    hyp_token = data["hyp"][i].strip().split()[:-1] + ["[SEP]"]
+            example = [src_token, src_label]
+            #    hyp_label = [PAD_ID] * len(hyp_token)
+            #    if "hyp_lab" in data and self.hyp_flag:
+            #        hyp_label = convert_label(data["hyp_lab"][i])
+            #    assert len(hyp_token) == len(hyp_label)
+            #    example.append(hyp_label)
+            examples.append(example)
+            data_list.append(examples)
         return data_list
 
 

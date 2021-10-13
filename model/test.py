@@ -14,6 +14,13 @@ from torch.nn import NLLLoss
 import logging
 import json
 
+import pyterrier as pt
+pt.init()
+
+def get_msmarco_queries(index_name):
+    dataset = pt.get_dataset(index_name)
+    return dataset.get_topics()
+
 logger = logging.getLogger(__name__)
 
 
@@ -61,7 +68,6 @@ def eval_model(model, validset_reader):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--test_path', help='train path')
     parser.add_argument("--batch_size", default=16, type=int, help="Total batch size for training.")
     parser.add_argument('--bert_pretrain', required=True)
     parser.add_argument('--checkpoint', required=True)
@@ -80,7 +86,8 @@ if __name__ == "__main__":
 
     tokenizer = AutoTokenizer.from_pretrained(args.bert_pretrain)
     logger.info("loading training set")
-    validset_reader = DataLoader(args.test_path, tokenizer, args, batch_size=args.batch_size, src_flag=False, test=True)
+    validset_reader = DataLoader(get_msmarco_queries('irds:msmarco-passage/dev/judged'), 
+                        tokenizer, args, batch_size=args.batch_size, src_flag=False, test=True)
 
     logger.info('initializing estimator model')
     bert_model = AutoModel.from_pretrained(args.bert_pretrain)
