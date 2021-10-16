@@ -135,9 +135,9 @@ class DataLoader(object):
             #data = json.loads(line)
             src_token = row['query'].strip().split()[:-1] + ["[SEP]"]
             src_label = [PAD_ID] * len(src_token)
-            #if self.src_flag:
-            #    src_label = convert_label(data["src_lab"])
-            #assert len(src_token) == len(src_label)
+            if self.src_flag:
+                src_label = convert_label(data["src_lab"])
+            assert len(src_token) == len(src_label)
             #if "hyp_lab" in data:
             #    assert len(data["hyp"]) == len(data["hyp_lab"])
             #for i in range(len(data["hyp"])):
